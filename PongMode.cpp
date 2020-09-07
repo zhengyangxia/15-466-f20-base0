@@ -125,7 +125,11 @@ bool PongMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 			(evt.motion.x + 0.5f) / window_size.x * 2.0f - 1.0f,
 			(evt.motion.y + 0.5f) / window_size.y *-2.0f + 1.0f
 		);
-		left_paddle.y = (clip_to_court * glm::vec3(clip_mouse, 1.0f)).y;
+		//left_paddle.y = (clip_to_court * glm::vec3(clip_mouse, 1.0f)).y;
+		float ball_offset = (clip_to_court * glm::vec3(clip_mouse, 1.0f)).y - ball.y;
+		if (ball_offset > 0.5f) ball_offset = 0.5f;
+		if (ball_offset < -0.5f) ball_offset = -0.5f;
+		ball_velocity.y = ball_offset;
 	}
 
 	return false;
@@ -137,7 +141,7 @@ void PongMode::update(float elapsed) {
 
 	//----- paddle update -----
 
-	{ //right player ai:
+	{ //players ai:
 		ai_offset_update -= elapsed;
 		if (ai_offset_update < elapsed) {
 			//update again in [0.5,1.0) seconds:
@@ -148,6 +152,14 @@ void PongMode::update(float elapsed) {
 			right_paddle.y = std::min(ball.y + ai_offset, right_paddle.y + 2.0f * elapsed);
 		} else {
 			right_paddle.y = std::max(ball.y + ai_offset, right_paddle.y - 2.0f * elapsed);
+		}
+
+
+		if (ai_offset > 0) {
+			left_paddle.y += std::min(ai_offset,  2.0f * elapsed);
+		}
+		else {
+			left_paddle.y += std::max(ai_offset, -2.0f * elapsed);
 		}
 	}
 
@@ -161,7 +173,7 @@ void PongMode::update(float elapsed) {
 	//----- ball update -----
 
 	//speed of ball doubles every four points:
-	float speed_multiplier = 4.0f * std::pow(2.0f, (left_score + right_score) / 4.0f);
+	float speed_multiplier = 4.0f * std::pow(2.0f, (left_score) / 2.0f);
 
 	//velocity cap, though (otherwise ball can pass through paddles):
 	speed_multiplier = std::min(speed_multiplier, 10.0f);
@@ -234,6 +246,7 @@ void PongMode::update(float elapsed) {
 		}
 	}
 
+
 	//----- rainbow trails -----
 
 	//age up all locations in ball trail:
@@ -248,9 +261,10 @@ void PongMode::update(float elapsed) {
 	while (ball_trail.size() >= 2 && ball_trail[1].z > trail_length) {
 		ball_trail.pop_front();
 	}
+
 }
 
-void PongMode::draw(glm::uvec2 const &drawable_size) {
+void PongMode::draw(glm::uvec2 const& drawable_size) {
 	//some nice colors from the course web page:
 	#define HEX_TO_U8VEC4( HX ) (glm::u8vec4( (HX >> 24) & 0xff, (HX >> 16) & 0xff, (HX >> 8) & 0xff, (HX) & 0xff ))
 	const glm::u8vec4 bg_color = HEX_TO_U8VEC4(0x171714ff);
@@ -436,4 +450,9 @@ void PongMode::draw(glm::uvec2 const &drawable_size) {
 
 	GL_ERRORS(); //PARANOIA: print errors just in case we did something wrong.
 
+}
+
+bool PongMode::end() {
+	if (left_score >= 10 || right_score >= 10) return true;
+	else return false;
 }

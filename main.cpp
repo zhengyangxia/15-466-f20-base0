@@ -47,7 +47,7 @@ int main(int argc, char **argv) {
 
 	//create window:
 	SDL_Window *window = SDL_CreateWindow(
-		"gp20 pong", //TODO: remember to set a title for your game!
+		"PONG OF JUSTICE", //TODO: remember to set a title for your game!
 		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
 		640, 480, //TODO: modify window size if you'd like
 		SDL_WINDOW_OPENGL
@@ -162,6 +162,9 @@ int main(int argc, char **argv) {
 			Mode::current->draw(drawable_size);
 		}
 
+		{
+			if (Mode::current->end()) break;
+		}
 		//Wait until the recently-drawn frame is shown before doing it all again:
 		SDL_GL_SwapWindow(window);
 	}
